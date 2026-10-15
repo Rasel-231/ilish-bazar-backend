@@ -10,15 +10,15 @@ import { catchAsync } from '../../../utils/catchAsync';
 import { getAuthenticatedUser } from '../../../utils/requestHelper';
 import { sendResponse } from '../../../utils/sendResponse';
 import type {
-  TCreateProductPayload,
-  TProductFilters,
-  TProductIdParam,
-  TUpdateProductPayload,
-} from './product.interface';
-import { ProductService } from './product.service';
+  TCatalogFilters,
+  TCatalogIdParam,
+  TCreateCatalogPayload,
+  TUpdateCatalogPayload,
+} from './catalog.interface';
+import { CatalogService } from './catalog.service';
 
-const createProduct = catchAsync(async (req: TRequest<TCreateProductPayload>, res) => {
-  const result = await ProductService.createProduct(
+const createCatalog = catchAsync(async (req: TRequest<TCreateCatalogPayload>, res) => {
+  const result = await CatalogService.createCatalog(
     req.body,
     getAuthenticatedUser(req).id,
     req.file?.path,
@@ -27,39 +27,39 @@ const createProduct = catchAsync(async (req: TRequest<TCreateProductPayload>, re
   sendResponse(res, {
     statusCode: StatusCodes.CREATED,
     success: true,
-    message: 'Product created successfully!',
+    message: 'Catalog created successfully!',
     data: result,
   });
 });
 
-const getAllProducts = catchAsync(async (req: TQueryRequest<TProductFilters>, res) => {
-  const { meta, data } = await ProductService.getAllProducts(req.query, req.query);
+const getAllCatalogs = catchAsync(async (req: TQueryRequest<TCatalogFilters>, res) => {
+  const { meta, data } = await CatalogService.getAllCatalogs(req.query, req.query);
 
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: 'Products retrieved successfully!',
+    message: 'Catalogs retrieved successfully!',
     meta,
     data,
   });
 });
 
-const getProductById = catchAsync(
-  async (req: TParamsRequest<TProductIdParam>, res) => {
-    const result = await ProductService.getProductById(req.params.id);
+const getCatalogById = catchAsync(
+  async (req: TParamsRequest<TCatalogIdParam>, res) => {
+    const result = await CatalogService.getCatalogById(req.params.id);
 
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
-      message: 'Product retrieved successfully!',
+      message: 'Catalog retrieved successfully!',
       data: result,
     });
   },
 );
 
-const updateProduct = catchAsync(
-  async (req: TBodyParamsRequest<TUpdateProductPayload, TProductIdParam>, res) => {
-    const result = await ProductService.updateProduct(
+const updateCatalog = catchAsync(
+  async (req: TBodyParamsRequest<TUpdateCatalogPayload, TCatalogIdParam>, res) => {
+    const result = await CatalogService.updateCatalog(
       req.params.id,
       req.body,
       req.file?.path,
@@ -68,29 +68,29 @@ const updateProduct = catchAsync(
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
-      message: 'Product updated successfully!',
+      message: 'Catalog updated successfully!',
       data: result,
     });
   },
 );
 
-const deleteProduct = catchAsync(
-  async (req: TParamsRequest<TProductIdParam>, res) => {
-    const result = await ProductService.deleteProduct(req.params.id);
+const deleteCatalog = catchAsync(
+  async (req: TParamsRequest<TCatalogIdParam>, res) => {
+    const result = await CatalogService.deleteCatalog(req.params.id);
 
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
-      message: 'Product deleted successfully!',
+      message: 'Catalog deleted successfully!',
       data: result,
     });
   },
 );
 
-export const ProductController = {
-  createProduct,
-  getAllProducts,
-  getProductById,
-  updateProduct,
-  deleteProduct,
+export const CatalogController = {
+  createCatalog,
+  getAllCatalogs,
+  getCatalogById,
+  updateCatalog,
+  deleteCatalog,
 };

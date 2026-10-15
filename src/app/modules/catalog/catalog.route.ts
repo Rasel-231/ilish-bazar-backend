@@ -3,45 +3,45 @@ import express from 'express';
 import { auth } from '../../../middlewares/auth';
 import { upload } from '../../../middlewares/upload';
 import { validateRequest } from '../../../middlewares/validateRequest';
-import { ProductController } from './product.controller';
-import { productValidation } from './product.validation';
+import { CatalogController } from './catalog.controller';
+import { catalogValidation } from './catalog.validation';
 
 const router = express.Router();
 
 router.get(
   '/',
-  validateRequest(productValidation.listProductsSchema),
-  ProductController.getAllProducts,
+  validateRequest(catalogValidation.listCatalogsSchema),
+  CatalogController.getAllCatalogs,
 );
 
 router.get(
   '/:id',
-  validateRequest(productValidation.idParamSchema),
-  ProductController.getProductById,
+  validateRequest(catalogValidation.idParamSchema),
+  CatalogController.getCatalogById,
 );
 
 router.post(
   '/',
   auth('ADMIN'),
   upload.single('image'),
-  validateRequest(productValidation.createProductSchema),
-  ProductController.createProduct,
+  validateRequest(catalogValidation.createCatalogSchema),
+  CatalogController.createCatalog,
 );
 
 router.patch(
   '/:id',
   auth('ADMIN'),
   upload.single('image'),
-  validateRequest(productValidation.idParamSchema),
-  validateRequest(productValidation.updateProductSchema),
-  ProductController.updateProduct,
+  validateRequest(catalogValidation.idParamSchema),
+  validateRequest(catalogValidation.updateCatalogSchema),
+  CatalogController.updateCatalog,
 );
 
 router.delete(
   '/:id',
   auth('ADMIN'),
-  validateRequest(productValidation.idParamSchema),
-  ProductController.deleteProduct,
+  validateRequest(catalogValidation.idParamSchema),
+  CatalogController.deleteCatalog,
 );
 
-export const ProductRoutes = router;
+export const CatalogRoutes = router;

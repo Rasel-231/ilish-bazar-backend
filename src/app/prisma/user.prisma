@@ -13,7 +13,12 @@ model User {
   sentMessages     Message[] @relation("MessageSender")
   receivedMessages Message[] @relation("MessageReceiver")
 
-  products Product[] @relation("ProductCreator")
+  catalogs Catalog[] @relation("CatalogCreator")
+  stockMovements StockMovement[] @relation("StockMovementCreator")
   orders   Order[]   @relation("UserOrders")
   payments Payment[] @relation("UserPayments")
+
+  reviews  Review[] @relation("UserReviews")
+  cart     Cart?    @relation("UserCart")
+  wishlist Wishlist? @relation("UserWishlist")
 }

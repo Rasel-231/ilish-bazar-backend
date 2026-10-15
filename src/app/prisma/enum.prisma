@@ -33,3 +33,9 @@ enum ProductUnit {
   PIECE
   DOZEN
 }
+
+enum StockMovementType {
+  IN
+  OUT
+  SET
+}

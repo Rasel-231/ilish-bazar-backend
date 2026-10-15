@@ -98,37 +98,37 @@ const createOrder = async (
   payload: TCreateOrderPayload,
 ): Promise<TOrder> =>
   prisma.$transaction(async (tx) => {
-    // Aggregate quantities so duplicated product lines are validated together.
-    const quantityByProduct = new Map<string, number>();
+    // Aggregate quantities so duplicated catalog lines are validated together.
+    const quantityByCatalog = new Map<string, number>();
 
     for (const item of payload.items) {
-      quantityByProduct.set(
+      quantityByCatalog.set(
         item.productId,
-        (quantityByProduct.get(item.productId) ?? 0) + item.quantity,
+        (quantityByCatalog.get(item.productId) ?? 0) + item.quantity,
       );
     }
 
-    const productIds = [...quantityByProduct.keys()];
+    const productIds = [...quantityByCatalog.keys()];
 
-    const products = await tx.product.findMany({
+    const catalogs = await tx.catalog.findMany({
       where: { id: { in: productIds }, isActive: true },
       select: { id: true, name: true, price: true },
     });
 
-    if (products.length !== productIds.length) {
-      throw new ApiError(StatusCodes.BAD_REQUEST, 'One or more products are unavailable!');
+    if (catalogs.length !== productIds.length) {
+      throw new ApiError(StatusCodes.BAD_REQUEST, 'One or more catalogs are unavailable!');
     }
 
-    const productMap = new Map(products.map((product) => [product.id, product]));
+    const catalogMap = new Map(catalogs.map((catalog) => [catalog.id, catalog]));
 
     let subtotal = new Prisma.Decimal(0);
     const itemsData: Prisma.OrderItemCreateWithoutOrderInput[] = [];
 
-    for (const [productId, quantity] of quantityByProduct) {
-      const product = productMap.get(productId)!;
+    for (const [productId, quantity] of quantityByCatalog) {
+      const catalog = catalogMap.get(productId)!;
 
       // Atomic, race-safe stock decrement guarded by the >= quantity condition.
-      const decremented = await tx.product.updateMany({
+      const decremented = await tx.catalog.updateMany({
         where: { id: productId, isActive: true, stock: { gte: quantity } },
         data: { stock: { decrement: quantity } },
       });
@@ -136,17 +136,17 @@ const createOrder = async (
       if (decremented.count === 0) {
         throw new ApiError(
           StatusCodes.BAD_REQUEST,
-          `Insufficient stock for "${product.name}"!`,
+          `Insufficient stock for "${catalog.name}"!`,
         );
       }
 
-      const unitPrice = product.price;
+      const unitPrice = catalog.price;
       const lineTotal = unitPrice.mul(quantity);
       subtotal = subtotal.add(lineTotal);
 
       itemsData.push({
-        product: { connect: { id: productId } },
-        productName: product.name,
+        catalog: { connect: { id: productId } },
+        productName: catalog.name,
         unitPrice,
         quantity,
         lineTotal,
@@ -233,7 +233,7 @@ const cancelOrder = async (user: IAuthenticatedUser, id: string): Promise<TOrder
 
     // Restore reserved stock atomically together with the status change.
     for (const item of order.items) {
-      await tx.product.update({
+      await tx.catalog.update({
         where: { id: item.productId },
         data: { stock: { increment: item.quantity } },
       });

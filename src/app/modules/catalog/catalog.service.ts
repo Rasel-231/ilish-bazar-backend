@@ -6,27 +6,27 @@ import prisma from '../../../shared/prisma';
 import { paginationHelper } from '../../../shared/paginationHelper';
 import type { IGenericResponse, IPaginationOptions } from '../../../types';
 import {
-  productSearchableFields,
-  productSelect,
-  productSortableFields,
-  type TProduct,
-} from './product.constant';
+  catalogSearchableFields,
+  catalogSelect,
+  catalogSortableFields,
+  type TCatalog,
+} from './catalog.constant';
 import type {
-  TCreateProductPayload,
-  TProductFilters,
-  TUpdateProductPayload,
-} from './product.interface';
+  TCatalogFilters,
+  TCreateCatalogPayload,
+  TUpdateCatalogPayload,
+} from './catalog.interface';
 
-const isSortableField = (value: string): value is (typeof productSortableFields)[number] =>
-  (productSortableFields as readonly string[]).includes(value);
+const isSortableField = (value: string): value is (typeof catalogSortableFields)[number] =>
+  (catalogSortableFields as readonly string[]).includes(value);
 
-const buildProductWhereInput = (filters: TProductFilters): Prisma.ProductWhereInput => {
+const buildCatalogWhereInput = (filters: TCatalogFilters): Prisma.CatalogWhereInput => {
   const { searchTerm, category, isActive, minPrice, maxPrice } = filters;
-  const andConditions: Prisma.ProductWhereInput[] = [];
+  const andConditions: Prisma.CatalogWhereInput[] = [];
 
   if (searchTerm) {
     andConditions.push({
-      OR: productSearchableFields.map((field) => ({
+      OR: catalogSearchableFields.map((field) => ({
         [field]: { contains: searchTerm, mode: 'insensitive' },
       })),
     });
@@ -55,17 +55,17 @@ const buildProductWhereInput = (filters: TProductFilters): Prisma.ProductWhereIn
 const resolveOrderBy = (
   sortBy: string,
   sortOrder: Prisma.SortOrder,
-): Prisma.ProductOrderByWithRelationInput => {
+): Prisma.CatalogOrderByWithRelationInput => {
   const field = isSortableField(sortBy) ? sortBy : 'createdAt';
   return { [field]: sortOrder };
 };
 
-const createProduct = async (
-  payload: TCreateProductPayload,
+const createCatalog = async (
+  payload: TCreateCatalogPayload,
   createdById?: string,
   uploadedFilePath?: string,
-): Promise<TProduct> =>
-  prisma.product.create({
+): Promise<TCatalog> =>
+  prisma.catalog.create({
     data: {
       name: payload.name,
       price: payload.price,
@@ -77,47 +77,47 @@ const createProduct = async (
       ...(uploadedFilePath && { imageUrl: uploadedFilePath }),
       ...(createdById && { createdById }),
     },
-    select: productSelect,
+    select: catalogSelect,
   });
 
-const getAllProducts = async (
-  filters: TProductFilters,
+const getAllCatalogs = async (
+  filters: TCatalogFilters,
   options: IPaginationOptions,
-): Promise<IGenericResponse<TProduct[]>> => {
+): Promise<IGenericResponse<TCatalog[]>> => {
   const { page, limit, skip, sortBy, sortOrder } =
     paginationHelper.calculatePagination(options);
-  const where = buildProductWhereInput(filters);
+  const where = buildCatalogWhereInput(filters);
   const orderBy = resolveOrderBy(sortBy, sortOrder);
 
   const [data, total] = await Promise.all([
-    prisma.product.findMany({ where, skip, take: limit, orderBy, select: productSelect }),
-    prisma.product.count({ where }),
+    prisma.catalog.findMany({ where, skip, take: limit, orderBy, select: catalogSelect }),
+    prisma.catalog.count({ where }),
   ]);
 
   return { meta: { page, limit, total }, data };
 };
 
-const getProductById = async (id: string): Promise<TProduct> => {
-  const product = await prisma.product.findUnique({
+const getCatalogById = async (id: string): Promise<TCatalog> => {
+  const catalog = await prisma.catalog.findUnique({
     where: { id },
-    select: productSelect,
+    select: catalogSelect,
   });
 
-  if (!product) {
-    throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found!');
+  if (!catalog) {
+    throw new ApiError(StatusCodes.NOT_FOUND, 'Catalog not found!');
   }
 
-  return product;
+  return catalog;
 };
 
-const updateProduct = async (
+const updateCatalog = async (
   id: string,
-  payload: TUpdateProductPayload,
+  payload: TUpdateCatalogPayload,
   uploadedFilePath?: string,
-): Promise<TProduct> => {
-  await getProductById(id);
+): Promise<TCatalog> => {
+  await getCatalogById(id);
 
-  return prisma.product.update({
+  return prisma.catalog.update({
     where: { id },
     data: {
       ...(payload.name && { name: payload.name }),
@@ -129,23 +129,23 @@ const updateProduct = async (
       ...(payload.isActive !== undefined && { isActive: payload.isActive }),
       ...(uploadedFilePath && { imageUrl: uploadedFilePath }),
     },
-    select: productSelect,
+    select: catalogSelect,
   });
 };
 
-const deleteProduct = async (id: string): Promise<TProduct> => {
+const deleteCatalog = async (id: string): Promise<TCatalog> => {
   try {
-    return await prisma.product.delete({ where: { id }, select: productSelect });
+    return await prisma.catalog.delete({ where: { id }, select: catalogSelect });
   } catch (error) {
     if (error instanceof Prisma.PrismaClientKnownRequestError) {
       if (error.code === 'P2025') {
-        throw new ApiError(StatusCodes.NOT_FOUND, 'Product not found!');
+        throw new ApiError(StatusCodes.NOT_FOUND, 'Catalog not found!');
       }
 
       if (error.code === 'P2003') {
         throw new ApiError(
           StatusCodes.CONFLICT,
-          'Product is referenced by existing orders and cannot be deleted!',
+          'Catalog is referenced by existing orders and cannot be deleted!',
         );
       }
     }
@@ -154,10 +154,10 @@ const deleteProduct = async (id: string): Promise<TProduct> => {
   }
 };
 
-export const ProductService = {
-  createProduct,
-  getAllProducts,
-  getProductById,
-  updateProduct,
-  deleteProduct,
+export const CatalogService = {
+  createCatalog,
+  getAllCatalogs,
+  getCatalogById,
+  updateCatalog,
+  deleteCatalog,
 };

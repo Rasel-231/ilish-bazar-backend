@@ -12,11 +12,11 @@ const sortOrders = ['asc', 'desc'] as const;
 
 const idParamSchema = z.object({
   params: z.object({
-    id: z.string().uuid('Invalid product id!'),
+    id: z.string().uuid('Invalid catalog id!'),
   }),
 });
 
-const createProductSchema = z.object({
+const createCatalogSchema = z.object({
   body: z.object({
     name: z.string().trim().min(1).max(150),
     description: z.string().trim().max(2000).optional(),
@@ -28,7 +28,7 @@ const createProductSchema = z.object({
   }),
 });
 
-const updateProductSchema = z.object({
+const updateCatalogSchema = z.object({
   body: z.object({
     name: z.string().trim().min(1).max(150).optional(),
     description: z.string().trim().max(2000).optional(),
@@ -40,7 +40,7 @@ const updateProductSchema = z.object({
   }),
 });
 
-const listProductsSchema = z.object({
+const listCatalogsSchema = z.object({
   query: z.object({
     page: z.coerce.number().int().positive().optional(),
     limit: z.coerce.number().int().positive().max(100).optional(),
@@ -54,9 +54,9 @@ const listProductsSchema = z.object({
   }),
 });
 
-export const productValidation = {
+export const catalogValidation = {
   idParamSchema,
-  createProductSchema,
-  updateProductSchema,
-  listProductsSchema,
+  createCatalogSchema,
+  updateCatalogSchema,
+  listCatalogsSchema,
 };

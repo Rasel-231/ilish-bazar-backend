@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
-import { productValidation } from './product.validation';
+import { catalogValidation } from './catalog.validation';
 
-export type { TProduct } from './product.constant';
+export type { TCatalog } from './catalog.constant';
 
-export type TCreateProductPayload = z.infer<
-  typeof productValidation.createProductSchema
+export type TCreateCatalogPayload = z.infer<
+  typeof catalogValidation.createCatalogSchema
 >['body'];
-export type TUpdateProductPayload = z.infer<
-  typeof productValidation.updateProductSchema
+export type TUpdateCatalogPayload = z.infer<
+  typeof catalogValidation.updateCatalogSchema
 >['body'];
-export type TProductFilters = z.infer<typeof productValidation.listProductsSchema>['query'];
-export type TProductIdParam = z.infer<typeof productValidation.idParamSchema>['params'];
+export type TCatalogFilters = z.infer<typeof catalogValidation.listCatalogsSchema>['query'];
+export type TCatalogIdParam = z.infer<typeof catalogValidation.idParamSchema>['params'];

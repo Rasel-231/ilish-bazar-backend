@@ -1,0 +1,19 @@
+model StockMovement {
+  id            String            @id @default(uuid())
+  catalogId     String
+  type          StockMovementType
+  quantity      Int
+  previousStock Int
+  newStock      Int
+  note          String?
+  reference     String?
+  createdById   String?
+  createdAt     DateTime          @default(now())
+
+  catalog   Catalog @relation(fields: [catalogId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("StockMovementCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([catalogId])
+  @@index([type])
+  @@index([createdAt])
+}

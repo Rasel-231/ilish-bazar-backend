@@ -22,8 +22,13 @@ A production-ready TypeScript + Express backend for an e-commerce platform, buil
 
 - **Modular architecture** — feature modules (`route → controller → service`) under `src/app/modules`.
 - **End-to-end type safety** — no `any`; entity types are derived from Prisma (`Prisma.XGetPayload`), request payloads/filters are inferred from Zod schemas, and enums live in a dedicated `enum.prisma`.
-- **Auth & authorization** — register/login, refresh tokens, password change/forgot/reset, role-based access (`USER` / `ADMIN`).
-- **Products, orders, payments, messages** — full CRUD with pagination, filtering, sorting and search.
+- **Auth & authorization** — register/login, refresh tokens, password change/forgot/reset, role-based access (`USER` / `ADMIN`), plus `optionalAuth` for public routes.
+- **Catalog, orders, payments, messages** — full CRUD with pagination, filtering, sorting and search.
+- **Catalog (product catalog)** — the `Product` Prisma model is exposed as `Catalog` (DB table `Product` is preserved via `@@map`). Rename keeps the public resource clean while existing data/migrations stay intact.
+- **Reviews** — guest or authenticated reviews with rating, moderation (approval) by admins, and owner/admin edits and deletes.
+- **Cart** — per-user cart with atomic add (increment), update, remove and clear, auto-creating the cart on first use and validating catalog availability.
+- **Wishlist** — per-user wishlist with idempotent add, remove and clear.
+- **Inventory** — `StockMovement` ledger (relation-linked to `Catalog`) tracking every stock change with `previousStock` / `newStock`, plus low-stock and summary endpoints.
 - **Centralized error handling** — narrows `unknown`, maps Prisma (`P2002`, `P2025`, `P2003`) and `ZodError` to clean API responses.
 - **Operational readiness** — `/health` and `/health/ready` probes, graceful shutdown, request logging.
 
@@ -47,10 +52,14 @@ my-premium-backend/
 │   │   │   ├── schema.prisma      # Generator & datasource
 │   │   │   ├── enum.prisma        # All enums (single source of truth)
 │   │   │   ├── user.prisma
-│   │   │   ├── product.prisma
-│   │   │   ├── order.prisma
+│   │   │   ├── catalog.prisma      # Product model, exposed as Catalog (@@map "Product")
+│   │   │   ├── order.prisma        # Order + OrderItem
 │   │   │   ├── payment.prisma
-│   │   │   └── message.prisma
+│   │   │   ├── message.prisma
+│   │   │   ├── review.prisma
+│   │   │   ├── cart.prisma         # Cart + CartItem
+│   │   │   ├── wishlist.prisma     # Wishlist + WishlistItem
+│   │   │   └── inventory.prisma    # StockMovement ledger
 │   │   └── routes/index.ts        # Route aggregator (mounted at /api/v1)
 │   ├── config/index.ts            # Typed env config
 │   ├── errors/ApiError.ts         # Custom error class
@@ -161,15 +170,17 @@ Base URL: `/api/v1`
 | `PATCH` | `/:id` | Update user (admin) |
 | `DELETE` | `/:id` | Delete user (admin) |
 
-### Products (`/products`)
+### Catalog (`/catalog`)
+
+Formerly the `Product` resource; the Prisma model is now `Catalog` (the DB table stays `Product` via `@@map`). Endpoints are identical in behavior (image upload supported on create/update).
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/` | List products (paginated) |
-| `GET` | `/:id` | Get product |
-| `POST` | `/` | Create product (admin) |
-| `PATCH` | `/:id` | Update product (admin) |
-| `DELETE` | `/:id` | Delete product (admin) |
+| `GET` | `/` | List catalog items (paginated; filters: `searchTerm`, `category`, `isActive`, `minPrice`, `maxPrice`) |
+| `GET` | `/:id` | Get catalog item |
+| `POST` | `/` | Create catalog item (admin, image upload) |
+| `PATCH` | `/:id` | Update catalog item (admin, image upload) |
+| `DELETE` | `/:id` | Delete catalog item (admin) |
 
 ### Orders (`/orders`)
 
@@ -203,12 +214,63 @@ Base URL: `/api/v1`
 | `PATCH` | `/:id` | Update message |
 | `DELETE` | `/:id` | Delete message |
 
+### Reviews (`/reviews`)
+
+Public routes use `optionalAuth`, so a review can be created by a signed-in user **or** an anonymous guest (`guestName` / `guestEmail`). Guests must supply a name. Non-admins only see approved reviews.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/` | Create review (guest or user) |
+| `GET` | `/` | List reviews (paginated; filters: `searchTerm`, `productId`, `userId`, `rating`, `isApproved`) |
+| `GET` | `/:id` | Get review |
+| `PATCH` | `/:id/approval` | Approve / unapprove review (admin) |
+| `PATCH` | `/:id` | Update review (owner or admin) |
+| `DELETE` | `/:id` | Delete review (owner or admin) |
+
+### Cart (`/cart`)
+
+All routes require auth and operate on the current user's cart (auto-created on first use). Each item response returns the full updated cart.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | Get my cart |
+| `POST` | `/items` | Add item (`{ productId, quantity? }`); increments quantity if already present |
+| `PATCH` | `/items/:itemId` | Update item quantity |
+| `DELETE` | `/items/:itemId` | Remove item |
+| `DELETE` | `/` | Clear cart |
+
+### Wishlist (`/wishlist`)
+
+All routes require auth and operate on the current user's wishlist (auto-created on first use).
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/` | Get my wishlist |
+| `POST` | `/items` | Add item (`{ productId }`); idempotent |
+| `DELETE` | `/items/:itemId` | Remove item |
+| `DELETE` | `/` | Clear wishlist |
+
+### Inventory (`/inventory`)
+
+All routes are admin-only. Stock is stored on `Catalog.stock`; every manual adjustment is recorded as a `StockMovement` (audit trail with `previousStock` / `newStock`).
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/adjust` | Adjust stock (`{ catalogId, type: IN\|OUT\|SET, quantity, note?, reference? }`); atomic, `OUT` never drives stock negative |
+| `GET` | `/movements` | Movement history (paginated; filters: `catalogId`, `type`, `startDate`, `endDate`) |
+| `GET` | `/low-stock` | Catalogs with `stock <= threshold` (default `10`) |
+| `GET` | `/summary` | `{ totalCatalogItems, totalStockUnits, outOfStockCount, lowStockCount, threshold }` |
+
 ## Database Models
 
-- **User** — email, password, name, role (`USER`/`ADMIN`), avatar, active status.
-- **Product** — name, description, price, stock, unit, category, image, active status.
-- **Order** — user, items, shipping details, totals, status, payment status.
+- **User** — email, password, name, role (`USER`/`ADMIN`), avatar, active status, `tokenVersion`.
+- **Catalog** (model name `Catalog`, DB table `Product` via `@@map`) — name, description, price, stock, unit, category, image, active status. Related to `OrderItem`, `Review`, `CartItem`, `WishlistItem` and `StockMovement`.
+- **Order / OrderItem** — user, items, shipping details, totals, status, payment status. `OrderItem.productId` references the catalog item.
 - **Payment** — order, amount, method, status, transaction ID, gateway response.
 - **Message** — sender, receiver, content, read state, optional parent (threading).
+- **Review** — catalog item, optional user or guest (name/email), rating, title, comment, approval flag.
+- **Cart / CartItem** — per-user cart; item quantity against a catalog item (unique per cart+product).
+- **Wishlist / WishlistItem** — per-user wishlist; saved catalog items (unique per wishlist+product).
+- **StockMovement** — inventory ledger: catalog item, `IN`/`OUT`/`SET` type, quantity, `previousStock`, `newStock`, note, reference, and the admin who made the change.
 
-Enums are defined once in `src/app/prisma/enum.prisma` and shared across models.
+Enums (`UserRole`, `OrderStatus`, `PaymentStatus`, `PaymentMethod`, `ProductUnit`, `StockMovementType`) are defined once in `src/app/prisma/enum.prisma` and shared across models.

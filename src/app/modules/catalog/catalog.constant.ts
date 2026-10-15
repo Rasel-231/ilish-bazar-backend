@@ -1,8 +1,8 @@
 import { Prisma } from '@prisma/client';
 
-export const productSearchableFields: string[] = ['name', 'category', 'description'];
+export const catalogSearchableFields: string[] = ['name', 'category', 'description'];
 
-export const productSortableFields = [
+export const catalogSortableFields = [
   'createdAt',
   'updatedAt',
   'name',
@@ -10,7 +10,7 @@ export const productSortableFields = [
   'stock',
 ] as const;
 
-export const productSelect = {
+export const catalogSelect = {
   id: true,
   name: true,
   description: true,
@@ -23,6 +23,6 @@ export const productSelect = {
   createdById: true,
   createdAt: true,
   updatedAt: true,
-} satisfies Prisma.ProductSelect;
+} satisfies Prisma.CatalogSelect;
 
-export type TProduct = Prisma.ProductGetPayload<{ select: typeof productSelect }>;
+export type TCatalog = Prisma.CatalogGetPayload<{ select: typeof catalogSelect }>;
