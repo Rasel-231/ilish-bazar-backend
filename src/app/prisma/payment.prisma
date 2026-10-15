@@ -1,13 +1,19 @@
 model Payment {
-  id            String   @id @default(uuid())
-  orderId       String
-  order         Order    @relation(fields: [orderId], references: [id])
-  amount        Float
-  currency      String   @default("BDT")
-  method        String   @default("SSLCommerz")
-  status        String   @default("INITIATED")
-  tranId        String   @unique
-  gatewayPageUrl String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String        @id @default(uuid())
+  orderId         String
+  userId          String
+  amount          Decimal       @db.Decimal(10, 2)
+  method          PaymentMethod @default(COD)
+  status          PaymentStatus @default(PENDING)
+  transactionId   String?       @unique
+  gatewayResponse Json?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
 }

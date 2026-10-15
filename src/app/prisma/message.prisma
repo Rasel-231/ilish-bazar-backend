@@ -1,0 +1,19 @@
+model Message {
+  id         String   @id @default(uuid())
+  content    String
+  senderId   String
+  receiverId String?
+  parentId   String?
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  sender   User      @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User?     @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: SetNull)
+  parent   Message?  @relation("MessageReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Message[] @relation("MessageReplies")
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([parentId])
+}

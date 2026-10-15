@@ -1,0 +1,35 @@
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  COD
+  SSLCOMMERZ
+  BKASH
+  NAGAD
+  STRIPE
+}
+
+enum ProductUnit {
+  KG
+  GRAM
+  PIECE
+  DOZEN
+}
